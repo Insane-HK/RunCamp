@@ -90,7 +90,7 @@ def generate_campaign_strategies(goal: str, days: int, budget: float, token_name
                 "id": "t1",
                 "title": f"Create a Viral Meme about {goal}",
                 "requirement": "Verifiable Farcaster Post Link containing image/meme.",
-                "reward": int(budget * 0.70),
+                "reward": round(budget * 0.70, 4),
                 "token": token_name,
                 "submissions": _generate_submissions_for_task(None, goal, count=3)
             },
@@ -98,7 +98,7 @@ def generate_campaign_strategies(goal: str, days: int, budget: float, token_name
                 "id": "t2",
                 "title": "Retweet the official launch announcement",
                 "requirement": "Verifiable Retweet/Quote-cast Link.",
-                "reward": int(budget * 0.30),
+                "reward": round(budget * 0.30, 4),
                 "token": token_name,
                 "submissions": _generate_submissions_for_task(None, goal, count=2)
             }
@@ -115,7 +115,7 @@ def generate_campaign_strategies(goal: str, days: int, budget: float, token_name
                 "id": "t3",
                 "title": f"Write a technical thread on {goal}",
                 "requirement": "Verifiable Farcaster Thread Link (>3 casts).",
-                "reward": int(budget * 0.80),
+                "reward": round(budget * 0.80, 4),
                 "token": token_name,
                 "submissions": _generate_submissions_for_task(None, goal, count=3)
             },
@@ -123,7 +123,7 @@ def generate_campaign_strategies(goal: str, days: int, budget: float, token_name
                 "id": "t4",
                 "title": "Record a 2-minute video tutorial",
                 "requirement": "Youtube/Loom Tracking Link.",
-                "reward": int(budget * 0.20),
+                "reward": round(budget * 0.20, 4),
                 "token": token_name,
                 "submissions": _generate_submissions_for_task(None, goal, count=2)
             }
@@ -140,7 +140,7 @@ def generate_campaign_strategies(goal: str, days: int, budget: float, token_name
                 "id": "t5",
                 "title": "Post an insightful meme",
                 "requirement": "Farcaster Post Link with image.",
-                "reward": int(budget * 0.40),
+                "reward": round(budget * 0.40, 4),
                 "token": token_name,
                 "submissions": _generate_submissions_for_task(None, goal, count=2)
             },
@@ -148,7 +148,7 @@ def generate_campaign_strategies(goal: str, days: int, budget: float, token_name
                 "id": "t6",
                 "title": f"Summary thread on {goal}",
                 "requirement": "Farcaster Thread Link (>2 casts).",
-                "reward": int(budget * 0.40),
+                "reward": round(budget * 0.40, 4),
                 "token": token_name,
                 "submissions": _generate_submissions_for_task(None, goal, count=2)
             },
@@ -156,7 +156,7 @@ def generate_campaign_strategies(goal: str, days: int, budget: float, token_name
                 "id": "t7",
                 "title": "Engage via constructive replies",
                 "requirement": "Link to quality reply/discussion.",
-                "reward": int(budget * 0.20),
+                "reward": round(budget * 0.20, 4),
                 "token": token_name,
                 "submissions": _generate_submissions_for_task(None, goal, count=2)
             }

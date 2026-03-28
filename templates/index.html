@@ -536,12 +536,22 @@
 
                 <div style="display:flex; gap:1rem; margin-top:1.5rem; flex-wrap:wrap;">
                     <!-- Pay all button -->
-                    <form method="POST" action="/pay_all" style="flex:1;">
+                    <form method="POST" action="/pay_all" style="flex:1;" id="payAllForm">
                         <button type="submit" class="btn btn--pay-all btn--full"
                             {% if state.winners_paid >= state.max_winners %}disabled style="opacity:0.4; cursor:not-allowed;"{% endif %}>
                             💸 Evaluate & Pay All ({{ state.current_submissions|length }} users)
                         </button>
                     </form>
+                    {% if has_unpaid %}
+                    <script>
+                        setTimeout(() => {
+                            const btn = document.querySelector('#payAllForm button');
+                            btn.innerHTML = '💸 Auto-paying in progress...';
+                            btn.style.opacity = '0.7';
+                            document.getElementById('payAllForm').submit();
+                        }, 2500);
+                    </script>
+                    {% endif %}
 
                     <!-- Check for more -->
                     <form method="POST" action="/check">
