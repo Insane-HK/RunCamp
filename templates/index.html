@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Campaign Manager — Monad</title>
+    <meta name="description" content="AI-powered campaign manager with ERC20 token payouts on Monad Testnet.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-card: rgba(20, 20, 35, 0.7);
+            --bg-glass: rgba(255, 255, 255, 0.03);
+            --border-glass: rgba(255, 255, 255, 0.08);
+            --border-active: rgba(139, 92, 246, 0.5);
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-purple: #8b5cf6;
+            --accent-violet: #7c3aed;
+            --accent-teal: #14b8a6;
+            --accent-emerald: #10b981;
+            --accent-blue: #3b82f6;
+            --accent-pink: #ec4899;
+            --accent-amber: #f59e0b;
+            --success: #22c55e;
+            --error: #ef4444;
+            --gradient-main: linear-gradient(135deg, #8b5cf6, #6366f1, #3b82f6);
+            --gradient-success: linear-gradient(135deg, #10b981, #14b8a6);
+            --gradient-fire: linear-gradient(135deg, #f59e0b, #ef4444);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: radial-gradient(ellipse at 20% 50%, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
+                        radial-gradient(ellipse at 80% 20%, rgba(59, 130, 246, 0.06) 0%, transparent 50%),
+                        radial-gradient(ellipse at 50% 80%, rgba(20, 184, 166, 0.05) 0%, transparent 50%);
+            animation: bgShift 20s ease-in-out infinite alternate;
+            z-index: 0; pointer-events: none;
+        }
+        @keyframes bgShift {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            100% { transform: translate(-5%, 3%) rotate(3deg); }
+        }
+
+        .app-container {
+            position: relative; z-index: 1;
+            max-width: 1100px; margin: 0 auto;
+            padding: 2rem 1.5rem 4rem;
+        }
+
+        /* ─── Header ─── */
+        .header { text-align: center; margin-bottom: 3rem; animation: fadeInDown 0.8s ease-out; }
+        .header__badge {
+            display: inline-flex; align-items: center; gap: 0.5rem;
+            background: rgba(139, 92, 246, 0.1); border: 1px solid rgba(139, 92, 246, 0.25);
+            border-radius: 100px; padding: 0.4rem 1rem;
+            font-size: 0.75rem; font-weight: 600; color: var(--accent-purple);
+            text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1.25rem;
+        }
+        .header__badge .pulse-dot {
+            width: 6px; height: 6px; background: var(--accent-purple);
+            border-radius: 50%; animation: pulse 2s ease-in-out infinite;
+        }
+        .header__title {
+            font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 900;
+            background: var(--gradient-main); -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent; background-clip: text;
+            line-height: 1.1; margin-bottom: 0.75rem;
+        }
+        .header__subtitle { color: var(--text-secondary); font-size: 1.05rem; max-width: 550px; margin: 0 auto; }
+        .header__monad { display: inline-flex; align-items: center; gap: 0.4rem; margin-top: 1rem; font-size: 0.8rem; color: var(--text-muted); font-weight: 500; }
+        .header__monad .monad-dot { width: 8px; height: 8px; background: var(--accent-teal); border-radius: 50%; box-shadow: 0 0 8px var(--accent-teal); }
+
+        /* ─── Glass card ─── */
+        .glass-card {
+            background: var(--bg-card); backdrop-filter: blur(20px);
+            border: 1px solid var(--border-glass); border-radius: 1.25rem;
+            padding: 2rem; transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .glass-card:hover { border-color: rgba(255, 255, 255, 0.12); }
+        .glass-card--active { border-color: var(--border-active); box-shadow: 0 0 40px rgba(139, 92, 246, 0.08); }
+        .glass-card--success { border-color: rgba(34, 197, 94, 0.4); box-shadow: 0 0 40px rgba(34, 197, 94, 0.06); }
+
+        /* ─── Step indicator ─── */
+        .step-indicator { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 1.5rem; }
+        .step-number {
+            display: flex; align-items: center; justify-content: center;
+            width: 32px; height: 32px; background: var(--gradient-main);
+            border-radius: 10px; font-size: 0.85rem; font-weight: 700; color: white;
+        }
+        .step-label { font-size: 1.15rem; font-weight: 700; color: var(--text-primary); }
+
+        /* ─── Form ─── */
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+        .form-group { display: flex; flex-direction: column; gap: 0.4rem; }
+        .form-group--full { grid-column: 1 / -1; }
+        .form-label { font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
+        .form-input {
+            background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border-glass);
+            border-radius: 0.75rem; padding: 0.85rem 1rem; font-size: 0.95rem;
+            font-family: 'Inter', sans-serif; color: var(--text-primary);
+            transition: all 0.25s ease; outline: none;
+        }
+        .form-input::placeholder { color: var(--text-muted); }
+        .form-input:focus { border-color: var(--accent-purple); box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15); background: rgba(255, 255, 255, 0.06); }
+
+        /* ─── Buttons ─── */
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+            border: none; border-radius: 0.75rem; padding: 0.85rem 1.5rem;
+            font-family: 'Inter', sans-serif; font-size: 0.95rem; font-weight: 700;
+            cursor: pointer; transition: all 0.25s ease; text-decoration: none;
+        }
+        .btn--primary { background: var(--gradient-main); color: white; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3); }
+        .btn--primary:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4); }
+        .btn--launch { background: var(--gradient-success); color: white; font-size: 1.2rem; padding: 1.25rem 2.5rem; box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3); }
+        .btn--launch:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 8px 30px rgba(16, 185, 129, 0.4); }
+        .btn--check {
+            background: linear-gradient(135deg, #f59e0b, #ef4444); color: white;
+            font-size: 1.1rem; padding: 1rem 2rem;
+            box-shadow: 0 4px 20px rgba(245, 158, 11, 0.3);
+        }
+        .btn--check:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(245, 158, 11, 0.4); }
+        .btn--pay-all {
+            background: linear-gradient(135deg, #22c55e, #10b981); color: white;
+            font-size: 1.1rem; padding: 1rem 2rem;
+            box-shadow: 0 4px 20px rgba(34, 197, 94, 0.3);
+        }
+        .btn--pay-all:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(34, 197, 94, 0.4); }
+        .btn--ghost { background: transparent; color: var(--text-muted); border: 1px solid var(--border-glass); font-weight: 500; }
+        .btn--ghost:hover { color: var(--text-primary); border-color: rgba(255, 255, 255, 0.2); }
+        .btn--full { width: 100%; }
+
+        /* ─── Strategy cards ─── */
+        .strategies-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.25rem; margin-top: 1.5rem; }
+        .strategy-card {
+            background: var(--bg-card); border: 1px solid var(--border-glass);
+            border-radius: 1rem; padding: 1.5rem; transition: all 0.3s ease;
+            display: flex; flex-direction: column;
+        }
+        .strategy-card:hover { border-color: var(--accent-purple); transform: translateY(-4px); box-shadow: 0 12px 40px rgba(139, 92, 246, 0.1); }
+        .strategy-card__name { font-size: 1.2rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.35rem; }
+        .strategy-card__desc { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.25rem; line-height: 1.5; }
+        .task-chip { background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border-glass); border-radius: 0.65rem; padding: 0.75rem 1rem; margin-bottom: 0.6rem; }
+        .task-chip__title { font-size: 0.85rem; font-weight: 600; color: var(--text-primary); }
+        .task-chip__proof { font-size: 0.7rem; color: var(--text-muted); font-family: monospace; margin-top: 0.2rem; }
+        .task-chip__reward { font-size: 0.8rem; font-weight: 700; color: var(--accent-amber); margin-top: 0.35rem; }
+        .strategy-card__footer { margin-top: auto; padding-top: 1rem; }
+
+        /* ─── Live dashboard ─── */
+        .live-badge {
+            display: inline-flex; align-items: center; gap: 0.4rem;
+            background: rgba(34, 197, 94, 0.12); border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 100px; padding: 0.3rem 0.85rem;
+            font-size: 0.7rem; font-weight: 700; color: var(--success);
+            text-transform: uppercase; letter-spacing: 0.08em;
+        }
+        .live-badge .live-dot { width: 6px; height: 6px; background: var(--success); border-radius: 50%; animation: pulse 1.5s ease-in-out infinite; }
+
+        .progress-section {
+            background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-glass);
+            border-radius: 0.85rem; padding: 1.25rem; margin: 1.5rem 0;
+        }
+        .progress-bar-bg { width: 100%; height: 8px; background: rgba(255, 255, 255, 0.06); border-radius: 100px; overflow: hidden; margin-top: 0.75rem; }
+        .progress-bar-fill { height: 100%; background: var(--gradient-main); border-radius: 100px; transition: width 0.8s ease; }
+        .progress-stats { display: flex; justify-content: space-between; align-items: center; }
+        .progress-count { font-size: 1.5rem; font-weight: 800; color: var(--accent-purple); }
+        .progress-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
+
+        /* ─── Waiting state ─── */
+        .waiting-panel { text-align: center; padding: 3rem 2rem; }
+        .waiting-panel__icon { font-size: 4rem; margin-bottom: 1rem; animation: floatBounce 3s ease-in-out infinite; }
+        .waiting-panel__title { font-size: 1.6rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.5rem; }
+        .waiting-panel__sub { color: var(--text-secondary); max-width: 480px; margin: 0 auto 0.75rem; line-height: 1.6; font-size: 0.95rem; }
+        .waiting-panel__timer {
+            display: inline-flex; align-items: center; gap: 0.5rem;
+            background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.25);
+            border-radius: 100px; padding: 0.5rem 1.25rem;
+            font-size: 0.85rem; font-weight: 700; color: var(--accent-amber);
+            margin-bottom: 2rem;
+        }
+        .waiting-panel__timer .timer-dot {
+            width: 8px; height: 8px; background: var(--accent-amber);
+            border-radius: 50%; animation: pulse 1s ease-in-out infinite;
+        }
+        @keyframes floatBounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-12px); }
+        }
+
+        /* ─── Submission cards (after check) ─── */
+        .submissions-reveal { animation: slideUp 0.5s ease-out; }
+        .submission-card {
+            background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-glass);
+            border-radius: 0.85rem; padding: 1.25rem; margin-bottom: 0.75rem;
+            transition: all 0.25s ease;
+        }
+        .submission-card:hover { border-color: rgba(255, 255, 255, 0.15); }
+        .submission-card--paid { border-color: rgba(34, 197, 94, 0.25); background: rgba(34, 197, 94, 0.04); }
+        .submission-user { font-size: 0.9rem; font-weight: 700; color: var(--accent-teal); }
+        .submission-time { font-size: 0.7rem; color: var(--text-muted); margin-left: 0.5rem; }
+        .submission-text { font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.4rem; line-height: 1.5; }
+        .submission-wallet {
+            display: inline-flex; align-items: center; gap: 0.4rem;
+            font-size: 0.7rem; color: var(--accent-blue); font-family: monospace;
+            margin-top: 0.5rem; background: rgba(59, 130, 246, 0.08);
+            padding: 0.3rem 0.6rem; border-radius: 0.4rem;
+        }
+        .submission-task-label {
+            font-size: 0.7rem; font-weight: 600; color: var(--accent-purple);
+            background: rgba(139, 92, 246, 0.1); padding: 0.2rem 0.5rem;
+            border-radius: 0.3rem; margin-top: 0.4rem; display: inline-block;
+        }
+
+        /* ─── Receipt ─── */
+        .receipt {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(59, 130, 246, 0.06));
+            border: 1px solid rgba(139, 92, 246, 0.25); border-radius: 1rem;
+            padding: 1.5rem; margin-top: 1.5rem; animation: slideUp 0.4s ease-out;
+        }
+        .receipt__title { font-size: 1rem; font-weight: 700; color: var(--text-primary); border-bottom: 1px solid rgba(255, 255, 255, 0.06); padding-bottom: 0.75rem; margin-bottom: 1rem; }
+        .receipt-entry { background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-glass); border-radius: 0.65rem; padding: 1rem; margin-bottom: 0.75rem; }
+        .receipt-entry__header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+        .receipt-entry__status { font-weight: 700; font-size: 0.9rem; }
+        .receipt-entry__status--success { color: var(--success); }
+        .receipt-entry__status--error { color: var(--error); }
+        .receipt-detail { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.8rem; }
+        .receipt-detail__label { color: var(--text-muted); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
+        .receipt-detail__value { font-weight: 600; word-break: break-all; }
+        .receipt-detail__value--amber { color: var(--accent-amber); }
+        .receipt-detail__value--blue { color: var(--accent-blue); font-family: monospace; font-size: 0.75rem; }
+        .receipt-detail__value--purple { color: var(--accent-purple); font-family: monospace; font-size: 0.75rem; }
+
+        /* ─── Completion ─── */
+        .completion-banner {
+            background: var(--gradient-success); border-radius: 1rem;
+            padding: 1.5rem 2rem; text-align: center; margin: 1.5rem 0;
+            animation: celebratePop 0.5s ease-out;
+        }
+        .completion-banner__title { font-size: 1.5rem; font-weight: 900; color: white; }
+        .completion-banner__sub { font-size: 0.9rem; color: rgba(255, 255, 255, 0.85); margin-top: 0.25rem; }
+
+        /* ─── Launch panel ─── */
+        .launch-panel { text-align: center; padding: 3rem 2rem; }
+        .launch-panel__title { font-size: 2rem; font-weight: 900; color: var(--text-primary); margin-bottom: 0.75rem; }
+        .launch-panel__sub { color: var(--text-secondary); max-width: 500px; margin: 0 auto 2rem; line-height: 1.6; }
+        .launch-tasks-preview {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;
+            margin-top: 2rem; opacity: 0.4; filter: blur(1px); pointer-events: none;
+        }
+        .launch-task-preview-item { background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-glass); border-radius: 0.65rem; padding: 1rem; text-align: left; }
+
+        /* ─── Wallet bar ─── */
+        .wallet-bar { display: flex; justify-content: flex-end; align-items: center; gap: 0.75rem; margin-bottom: 1.5rem; }
+        .wallet-connected {
+            display: inline-flex; align-items: center; gap: 0.4rem;
+            background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.2);
+            border-radius: 100px; padding: 0.35rem 0.85rem;
+            font-size: 0.75rem; font-weight: 600; color: var(--success);
+        }
+        .wallet-address { font-family: monospace; font-size: 0.7rem; color: var(--text-muted); }
+        #connectWalletBtn {
+            background: var(--gradient-main); color: white; border: none;
+            border-radius: 100px; padding: 0.5rem 1.2rem;
+            font-family: 'Inter', sans-serif; font-size: 0.8rem; font-weight: 700;
+            cursor: pointer; transition: all 0.25s ease;
+        }
+        #connectWalletBtn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3); }
+
+        .section-divider { border: none; border-top: 1px solid var(--border-glass); margin: 1.5rem 0; }
+        .footer { text-align: center; margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border-glass); }
+
+        /* ─── Animations ─── */
+        @keyframes fadeInDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        @keyframes celebratePop { 0% { transform: scale(0.9); opacity: 0; } 70% { transform: scale(1.02); } 100% { transform: scale(1); opacity: 1; } }
+        .fade-in { animation: slideUp 0.5s ease-out; }
+
+        @media (max-width: 768px) {
+            .form-grid, .strategies-grid, .receipt-detail, .launch-tasks-preview { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+
+        <!-- Wallet Bar -->
+        <div class="wallet-bar">
+            <div id="walletInfo" style="display:none;">
+                <span class="wallet-connected"><span style="font-size:0.65rem;">🟢</span> Connected</span>
+                <span class="wallet-address" id="walletAddress"></span>
+            </div>
+            <button id="connectWalletBtn" onclick="connectWallet()">🦊 Connect Wallet</button>
+        </div>
+
+        <!-- Header -->
+        <header class="header">
+            <div class="header__badge"><span class="pulse-dot"></span> AI-Powered Campaign Engine</div>
+            <h1 class="header__title">Campaign Manager</h1>
+            <p class="header__subtitle">Deploy AI-driven campaigns & distribute ERC20 tokens to your community on Monad.</p>
+            <div class="header__monad"><span class="monad-dot"></span> Monad Testnet • 400ms Blocks • 800ms Finality</div>
+        </header>
+
+        {% if not state.strategies and not state.active_strategy %}
+        <!-- ═══════ STEP 1: CAMPAIGN PLANNER ═══════ -->
+        <main class="glass-card fade-in" id="step1-planner">
+            <div class="step-indicator">
+                <span class="step-number">1</span>
+                <span class="step-label">Campaign Planner</span>
+            </div>
+            <form method="POST" action="/generate">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Campaign Goal / Product</label>
+                        <input type="text" name="goal" class="form-input" placeholder="e.g. Launch my Testnet" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Timeframe (Days)</label>
+                        <input type="number" name="days" class="form-input" placeholder="10" min="1" required>
+                    </div>
+                    <div class="form-group form-group--full">
+                        <label class="form-label">💰 Campaign Budget (in MON)</label>
+                        <input type="number" name="mon_budget" class="form-input" placeholder="e.g. 100" min="0.01" step="0.01" required>
+                    </div>
+                </div>
+                <hr class="section-divider">
+                <button type="submit" class="btn btn--primary btn--full">✨ Generate AI Strategies</button>
+            </form>
+        </main>
+
+        {% elif state.strategies and not state.active_strategy %}
+        <!-- ═══════ STEP 2: STRATEGY SELECTION ═══════ -->
+        <div class="fade-in">
+            <div class="step-indicator" style="justify-content: center; margin-bottom: 0.5rem;">
+                <span class="step-number">2</span>
+                <span class="step-label">Choose Your Strategy</span>
+            </div>
+            <p style="text-align:center; color:var(--text-secondary); margin-bottom:1.5rem; font-size:0.9rem;">
+                AI generated {{ state.strategies|length }} strategies for
+                <strong style="color:var(--accent-purple);">{{ state.goal }}</strong> with a budget of
+                <strong style="color:var(--accent-amber);">{{ state.budget }} MON</strong>
+            </p>
+            <div class="strategies-grid">
+                {% for strat in state.strategies %}
+                <div class="strategy-card">
+                    <div>
+                        <div class="strategy-card__name">{{ strat.name }}</div>
+                        <div class="strategy-card__desc">{{ strat.description }}</div>
+                        {% for task in strat.tasks %}
+                        <div class="task-chip">
+                            <div class="task-chip__title">{{ task.title }}</div>
+                            <div class="task-chip__proof">{{ task.requirement }}</div>
+                            <div class="task-chip__reward">💰 {{ task.reward }} {{ task.token }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="strategy-card__footer">
+                        <form method="POST" action="/select">
+                            <input type="hidden" name="strat_id" value="{{ strat.id }}">
+                            <button type="submit" class="btn btn--primary btn--full">Select {{ strat.name }}</button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <div style="text-align:center; margin-top:1.5rem;">
+                <a href="/reset" class="btn btn--ghost">← Start Over</a>
+            </div>
+        </div>
+
+        {% elif state.active_strategy %}
+
+            {% if not state.campaign_launched %}
+            <!-- ═══════ STEP 3: PRE-LAUNCH ═══════ -->
+            <div class="glass-card glass-card--active fade-in">
+                <div class="launch-panel">
+                    <div class="step-indicator" style="justify-content:center;">
+                        <span class="step-number">3</span>
+                        <span class="step-label">Launch Campaign</span>
+                    </div>
+                    <h2 class="launch-panel__title">{{ state.active_strategy.name }}</h2>
+                    <p class="launch-panel__sub">
+                        Your strategy is locked in. Hit launch to post campaign tasks to Farcaster.
+                        The bot will announce tasks and say <strong>"🤖 Checking back in 30 mins"</strong>.
+                    </p>
+                    <form method="POST" action="/launch">
+                        <button type="submit" class="btn btn--launch">🚀 Launch Campaign to Farcaster</button>
+                    </form>
+                    <div class="launch-tasks-preview">
+                        {% for task in state.active_strategy.tasks %}
+                        <div class="launch-task-preview-item">
+                            <div style="font-weight:700; color:var(--text-primary); font-size:0.9rem;">{{ task.title }}</div>
+                            <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.3rem;">Locked pending launch...</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            {% elif not state.checked %}
+            <!-- ═══════ STEP 4: WAITING FOR 30 MINS ═══════ -->
+            <div class="glass-card glass-card--active fade-in">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem; margin-bottom:1rem;">
+                    <div class="step-indicator" style="margin-bottom:0;">
+                        <span class="step-number">4</span>
+                        <span class="step-label">{{ state.active_strategy.name }}</span>
+                    </div>
+                    <span class="live-badge"><span class="live-dot"></span> Posted to Farcaster</span>
+                </div>
+
+                <!-- Progress -->
+                <div class="progress-section">
+                    <div class="progress-stats">
+                        <div>
+                            <div class="progress-label">Winners Paid</div>
+                            <div class="progress-count">{{ state.winners_paid }} / {{ state.max_winners }}</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div class="progress-label">Budget</div>
+                            <div style="font-size:1rem; font-weight:700; color:var(--accent-amber);">{{ state.budget }} {{ state.token_name }}</div>
+                        </div>
+                    </div>
+                    <div class="progress-bar-bg">
+                        <div class="progress-bar-fill" style="width:{{ (state.winners_paid / state.max_winners * 100) if state.max_winners > 0 else 0 }}%;"></div>
+                    </div>
+                </div>
+
+                <!-- Waiting panel -->
+                <div class="waiting-panel">
+                    <div class="waiting-panel__icon">🤖</div>
+                    <div class="waiting-panel__title">Campaign Posted! Waiting for replies...</div>
+                    <div class="waiting-panel__sub">
+                        The bot has posted your campaign tasks on Farcaster and told the community
+                        <strong>"Checking back in 30 mins"</strong>. Click below when you're ready to check for submissions.
+                    </div>
+                    <div class="waiting-panel__timer">
+                        <span class="timer-dot"></span>
+                        Waiting for community submissions...
+                    </div>
+                    <br>
+                    <form method="POST" action="/check">
+                        <button type="submit" class="btn btn--check">
+                            🔍 Check Now — Fetch Submissions
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            {% elif state.checked and state.current_submissions %}
+            <!-- ═══════ STEP 5: SUBMISSIONS REVEALED — PAY ALL ═══════ -->
+            <div class="glass-card glass-card--success fade-in">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem;">
+                    <div class="step-indicator" style="margin-bottom:0;">
+                        <span class="step-number">5</span>
+                        <span class="step-label">{{ state.active_strategy.name }}</span>
+                    </div>
+                    <span class="live-badge"><span class="live-dot"></span> Live Campaign</span>
+                </div>
+
+                <!-- Progress -->
+                {% if state.winners_paid >= state.max_winners %}
+                <div class="completion-banner">
+                    <div class="completion-banner__title">🎉 Campaign Complete!</div>
+                    <div class="completion-banner__sub">{{ state.max_winners }}/{{ state.max_winners }} winners paid. All payouts distributed.</div>
+                </div>
+                {% else %}
+                <div class="progress-section">
+                    <div class="progress-stats">
+                        <div>
+                            <div class="progress-label">Winners Paid</div>
+                            <div class="progress-count">{{ state.winners_paid }} / {{ state.max_winners }}</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div class="progress-label">Budget</div>
+                            <div style="font-size:1rem; font-weight:700; color:var(--accent-amber);">{{ state.budget }} {{ state.token_name }}</div>
+                        </div>
+                    </div>
+                    <div class="progress-bar-bg">
+                        <div class="progress-bar-fill" style="width:{{ (state.winners_paid / state.max_winners * 100) if state.max_winners > 0 else 0 }}%;"></div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <hr class="section-divider">
+
+                <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">
+                    📩 {{ state.current_submissions|length }} Submissions Found
+                </h3>
+                <p style="color:var(--text-secondary); font-size:0.85rem; margin-bottom:1.25rem;">
+                    These community members responded to your campaign on Farcaster. Review their wallets below and pay them all at once.
+                </p>
+
+                <div class="submissions-reveal">
+                    {% for sub in state.current_submissions %}
+                    <div class="submission-card {% if sub.already_paid %}submission-card--paid{% endif %}">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:0.5rem;">
+                            <div>
+                                <span class="submission-user">{{ sub.username }}</span>
+                                <span class="submission-time">{{ sub.timestamp }}</span>
+                            </div>
+                            <span class="submission-task-label">{{ sub.task_title }}</span>
+                        </div>
+                        <div class="submission-text">{{ sub.text }}</div>
+                        <div class="submission-wallet">🔗 {{ sub.wallet }}</div>
+                        {% if sub.already_paid %}
+                        <div style="margin-top:0.5rem; font-size:0.8rem; font-weight:700; color:var(--success);">✅ Paid</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+
+                {% set unpaid_count = state.current_submissions | selectattr('already_paid', 'undefined') | list | length %}
+                {% set has_unpaid = false %}
+                {% for sub in state.current_submissions %}
+                    {% if not sub.get('already_paid', false) %}
+                        {% set has_unpaid = true %}
+                    {% endif %}
+                {% endfor %}
+
+                <div style="display:flex; gap:1rem; margin-top:1.5rem; flex-wrap:wrap;">
+                    <!-- Pay all button -->
+                    <form method="POST" action="/pay_all" style="flex:1;">
+                        <button type="submit" class="btn btn--pay-all btn--full"
+                            {% if state.winners_paid >= state.max_winners %}disabled style="opacity:0.4; cursor:not-allowed;"{% endif %}>
+                            💸 Evaluate & Pay All ({{ state.current_submissions|length }} users)
+                        </button>
+                    </form>
+
+                    <!-- Check for more -->
+                    <form method="POST" action="/check">
+                        <button type="submit" class="btn btn--check"
+                            {% if state.winners_paid >= state.max_winners %}disabled style="opacity:0.4; cursor:not-allowed;"{% endif %}>
+                            🔍 Check Again
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Payment receipts -->
+            {% if pay_results %}
+            <div class="receipt fade-in">
+                <div class="receipt__title">⚡ ERC20 Payout Receipts ({{ pay_results|length }} transactions)</div>
+                {% for res in pay_results %}
+                <div class="receipt-entry">
+                    <div class="receipt-entry__header">
+                        {% if res.status == 'success' %}
+                        <span style="font-size:1.1rem;">✅</span>
+                        <span class="receipt-entry__status receipt-entry__status--success">{{ res.message }}</span>
+                        {% else %}
+                        <span style="font-size:1.1rem;">❌</span>
+                        <span class="receipt-entry__status receipt-entry__status--error">{{ res.message }}</span>
+                        {% endif %}
+                    </div>
+                    {% if res.status == 'success' %}
+                    <div class="receipt-detail">
+                        <div>
+                            <div class="receipt-detail__label">User</div>
+                            <div class="receipt-detail__value" style="color:var(--accent-teal);">{{ res.username }}</div>
+                        </div>
+                        <div>
+                            <div class="receipt-detail__label">Amount</div>
+                            <div class="receipt-detail__value receipt-detail__value--amber">{{ res.amount_paid }}</div>
+                        </div>
+                        <div>
+                            <div class="receipt-detail__label">Wallet</div>
+                            <div class="receipt-detail__value receipt-detail__value--blue">{{ res.wallet }}</div>
+                        </div>
+                        <div>
+                            <div class="receipt-detail__label">Monad TX</div>
+                            <div class="receipt-detail__value receipt-detail__value--purple">{{ res.tx }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% endif %}
+
+            <div class="footer">
+                <a href="/reset" class="btn btn--ghost">🔄 Reset Campaign</a>
+            </div>
+        {% endif %}
+
+    </div>
+
+    <script>
+
+
+        let userWallet = null;
+        async function connectWallet() {
+            if (typeof window.ethereum === 'undefined') { alert('Please install MetaMask.'); return; }
+            try {
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                userWallet = accounts[0];
+                document.getElementById('walletInfo').style.display = 'inline-flex';
+                document.getElementById('walletInfo').style.gap = '0.5rem';
+                document.getElementById('walletInfo').style.alignItems = 'center';
+                document.getElementById('walletAddress').textContent = userWallet.slice(0, 6) + '...' + userWallet.slice(-4);
+                document.getElementById('connectWalletBtn').textContent = '✅ Connected';
+                document.getElementById('connectWalletBtn').style.opacity = '0.6';
+                try {
+                    await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x279F' }] });
+                } catch (switchError) {
+                    if (switchError.code === 4902) {
+                        await window.ethereum.request({
+                            method: 'wallet_addEthereumChain',
+                            params: [{ chainId: '0x279F', chainName: 'Monad Testnet',
+                                nativeCurrency: { name: 'MON', symbol: 'MON', decimals: 18 },
+                                rpcUrls: ['https://testnet-rpc.monad.xyz/'],
+                                blockExplorerUrls: ['https://testnet.monadexplorer.com/'] }]
+                        });
+                    }
+                }
+            } catch (err) { console.error('Wallet connection failed:', err); }
+        }
+        if (window.ethereum) {
+            window.ethereum.request({ method: 'eth_accounts' }).then(accounts => {
+                if (accounts.length > 0) {
+                    userWallet = accounts[0];
+                    document.getElementById('walletInfo').style.display = 'inline-flex';
+                    document.getElementById('walletInfo').style.gap = '0.5rem';
+                    document.getElementById('walletInfo').style.alignItems = 'center';
+                    document.getElementById('walletAddress').textContent = userWallet.slice(0, 6) + '...' + userWallet.slice(-4);
+                    document.getElementById('connectWalletBtn').textContent = '✅ Connected';
+                    document.getElementById('connectWalletBtn').style.opacity = '0.6';
+                }
+            });
+        }
+    </script>
+</body>
+</html>
