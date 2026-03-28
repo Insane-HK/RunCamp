@@ -7,6 +7,7 @@
     <meta name="description" content="AI-powered campaign manager with ERC20 token payouts on Monad Testnet.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -325,7 +326,7 @@
                 <span class="step-number">1</span>
                 <span class="step-label">Campaign Planner</span>
             </div>
-            <form method="POST" action="/generate">
+            <form method="POST" action="/generate" id="plannerForm" onsubmit="return handleDeposit(event)">
                 <div class="form-grid">
                     <div class="form-group">
                         <label class="form-label">Campaign Goal / Product</label>
@@ -337,11 +338,11 @@
                     </div>
                     <div class="form-group form-group--full">
                         <label class="form-label">💰 Campaign Budget (in MON)</label>
-                        <input type="number" name="mon_budget" class="form-input" placeholder="e.g. 100" min="0.01" step="0.01" required>
+                        <input type="number" name="mon_budget" id="monBudget" class="form-input" placeholder="e.g. 100" min="0.01" step="0.01" required>
                     </div>
                 </div>
                 <hr class="section-divider">
-                <button type="submit" class="btn btn--primary btn--full">✨ Generate AI Strategies</button>
+                <button type="submit" id="generateBtn" class="btn btn--primary btn--full">✨ Generate AI Strategies</button>
             </form>
         </main>
 
@@ -613,7 +614,58 @@
     </div>
 
     <script>
+        const CONTRACT_ADDRESS = "{{ state.contract_address }}";
+        const vault_abi = [{"inputs":[],"name":"deposit","outputs":[],"stateMutability":"payable","type":"function"}];
 
+        async function handleDeposit(event) {
+            event.preventDefault();
+            
+            if (!userWallet) {
+                alert("Please connect your MetaMask wallet first!");
+                connectWallet();
+                return false;
+            }
+
+            const monAmountStr = document.getElementById('monBudget').value;
+            if (!monAmountStr || parseFloat(monAmountStr) <= 0) {
+                alert("Please enter a valid MON budget.");
+                return false;
+            }
+
+            const btn = document.getElementById('generateBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '⏳ Waiting for MetaMask Transaction...';
+            btn.disabled = true;
+            btn.style.opacity = '0.7';
+
+            try {
+                // Ethers setup
+                const provider = new ethers.providers.Web3Provider(window.ethereum);
+                const signer = provider.getSigner();
+                const vaultContract = new ethers.Contract(CONTRACT_ADDRESS, vault_abi, signer);
+                
+                // Native MON deposit
+                const valueInWei = ethers.utils.parseEther(monAmountStr);
+                const tx = await vaultContract.deposit({ value: valueInWei });
+                
+                btn.innerHTML = '🔗 Confirming on Monad Testnet...';
+                await tx.wait(); // Wait for receipt
+                
+                btn.innerHTML = '✅ Deposit Secured! Generating Strategies...';
+                
+                // Allow the backend to proceed
+                document.getElementById('plannerForm').submit();
+                return true;
+
+            } catch (err) {
+                console.error("Deposit failed:", err);
+                alert("Deposit transaction failed or was rejected. See console for details.");
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                return false;
+            }
+        }
 
         let userWallet = null;
         async function connectWallet() {

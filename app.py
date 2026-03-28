@@ -6,6 +6,7 @@ import os
 from backend.campaign_generator import generate_campaign_strategies
 from backend.campaign_agent import process_campaign_submission
 from backend.farcaster import post_campaign
+from backend.config import CONTRACT_ADDRESS
 
 app = FastAPI(title="AI Campaign Manager — Monad")
 
@@ -28,6 +29,7 @@ db_state = {
     "deposited": False,
     "farcaster_posted": False,
     "payment_log": [],
+    "contract_address": CONTRACT_ADDRESS,
 }
 
 
